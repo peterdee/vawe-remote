@@ -1,51 +1,63 @@
 import React, {
   useCallback,
+  useContext,
   useEffect,
   useState,
 } from 'react';
-// import { useNavigate } from 'react-router-dom';
-import { io, type Socket } from 'socket.io-client';
+import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 
-// import { routes } from '../../router';
+import {
+  DEFAULT_SERVER_ADDRESS,
+  WS_EVENTS,
+} from '../../constants';
+import { routes } from '../../router';
+import { SocketContext } from '../../contexts/socket';
 import type * as types from '../../types';
-import { WS_EVENTS } from '../../constants';
 import './styles.css';
 
 const Main = React.memo((): React.JSX.Element => {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
 
-  const [address, setAddress] = useState<string>('http://localhost:5077');
-  const [connection, setConnection] = useState<Socket | null>(null);
+  const [address, setAddress] = useState<string>(DEFAULT_SERVER_ADDRESS);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const { connection, storeConnection } = useContext(SocketContext);
 
   const handleSubmit = useCallback(
-    () => {
+    (event: React.FormEvent) => {
+      event.preventDefault();
+
+      setIsLoading(true);
       if (!(address && address.trim())) {
         return null;
       }
 
-      const newConnection = io(
-        address,
-        {
-          autoConnect: true,
-          reconnection: true,
-          reconnectionAttempts: 10,
-          reconnectionDelay: 1,
-          reconnectionDelayMax: 10,
-          retries: 10,
-        },
-      );
+      if (storeConnection) {
+        const newConnection = io(
+          address,
+          {
+            autoConnect: true,
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1,
+            reconnectionDelayMax: 10,
+            retries: 10,
+          },
+        );
 
-      newConnection.on('connect', () => {
-        setConnection(newConnection);
-        console.log('connected', newConnection.id);
-      });
-
-      console.log('submit', address);
-      // return navigate(routes.player);
+        newConnection.on('connect', () => {
+          storeConnection(newConnection);
+          setIsLoading(false);
+          console.log('connected', newConnection.id);
+          return navigate(routes.player);
+        });
+      }
     },
     [
       address,
-      // navigate,
+      navigate,
+      storeConnection,
     ],
   );
 
@@ -92,7 +104,7 @@ const Main = React.memo((): React.JSX.Element => {
         />
         <button
           className="button mt-1"
-          disabled={!(address && address.trim())}
+          disabled={!(address && address.trim()) || isLoading}
           type="submit"
         >
           Connect

@@ -1,3 +1,5 @@
+export const DEFAULT_SERVER_ADDRESS = 'http://localhost:5077';
+
 export const WS_EVENTS = {
   addTrack: 'ADD_TRACK',
   onTimeUpdate: 'ON_TIME_UPDATE',
