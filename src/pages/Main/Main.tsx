@@ -4,38 +4,34 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
-import {
-  DEFAULT_SERVER_ADDRESS,
-  WS_EVENTS,
-} from '../../constants';
+import type { AppDispatch, RootState } from '../../store';
+import { changeServerAddress } from '../../store/features/settings';
+import { DEFAULT_SERVER_ADDRESS } from '../../constants';
+import log from '../../utilities/logger';
 import { routes } from '../../router';
 import { SocketContext } from '../../contexts/socket';
-import type * as types from '../../types';
 import './styles.css';
 
 const Main = React.memo((): React.JSX.Element => {
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { storeConnection } = useContext(SocketContext);
 
   const [address, setAddress] = useState<string>(DEFAULT_SERVER_ADDRESS);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const { connection, storeConnection } = useContext(SocketContext);
+  const autoConnect = useSelector<RootState, boolean>((state) => state.settings.autoConnect);
+  const serverAddress = useSelector<RootState, string>((state) => state.settings.serverAddress);
 
-  const handleSubmit = useCallback(
-    (event: React.FormEvent) => {
-      event.preventDefault();
-
-      setIsLoading(true);
-      if (!(address && address.trim())) {
-        return null;
-      }
-
+  const connectToServer = useCallback(
+    (serverAddress: string) => {
       if (storeConnection) {
         const newConnection = io(
-          address,
+          serverAddress,
           {
             autoConnect: true,
             reconnection: true,
@@ -49,41 +45,51 @@ const Main = React.memo((): React.JSX.Element => {
         newConnection.on('connect', () => {
           storeConnection(newConnection);
           setIsLoading(false);
-          console.log('connected', newConnection.id);
+          log('connected as', newConnection.id);
           return navigate(routes.player);
         });
       }
     },
     [
-      address,
       navigate,
       storeConnection,
     ],
   );
 
-  const addTrack = (payload: types.Track) => {
-    console.log(payload);
-  };
-
-  const loadPlaylist = (payload: types.Track[]) => {
-    console.log(payload);
-  };
-
-
   useEffect(
     () => {
-      if (connection) {
-        connection.on(WS_EVENTS.addTrack, addTrack);
-        connection.on(WS_EVENTS.loadPlaylist, loadPlaylist);
+      if (autoConnect && serverAddress && storeConnection) {
+        connectToServer(serverAddress);
+      } else {
+        setIsLoading(false);
       }
-      return () => {
-        if (connection) {
-          connection.off(WS_EVENTS.addTrack, addTrack);
-          connection.off(WS_EVENTS.loadPlaylist, loadPlaylist);
-        }
-      };
     },
-    [connection],
+    [
+      autoConnect,
+      connectToServer,
+      serverAddress,
+      storeConnection,
+    ],
+  );
+
+  const handleSubmit = useCallback(
+    (event: React.FormEvent) => {
+      event.preventDefault();
+
+      setIsLoading(true);
+      if (!(address && address.trim())) {
+        return null;
+      }
+
+      dispatch(changeServerAddress(address));
+
+      return connectToServer(address);
+    },
+    [
+      address,
+      connectToServer,
+      dispatch,
+    ],
   );
 
   return (
@@ -98,7 +104,7 @@ const Main = React.memo((): React.JSX.Element => {
         <input
           className="input mt-1"
           onChange={(event) => setAddress(event.currentTarget.value)}
-          placeholder="http://localhost:5077"
+          placeholder={DEFAULT_SERVER_ADDRESS}
           type="text"
           value={address}
         />
