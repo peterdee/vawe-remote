@@ -5,17 +5,21 @@ import type * as types from '../../../types';
 export interface TracklistState {
   currentTrack: types.Track | null;
   currentTrackElapsedTime: number;
+  isMuted: boolean;
   isPlaying: boolean;
   queue: string[];
   tracks: types.Track[];
+  volume: number;
 }
 
 const initialState: TracklistState = {
   currentTrack: null,
   currentTrackElapsedTime: 0,
+  isMuted: false,
   isPlaying: false,
   queue: [],
   tracks: [],
+  volume: 0,
 };
 
 export const tracklistSlice = createSlice({
@@ -38,8 +42,14 @@ export const tracklistSlice = createSlice({
     changeCurrentTrackElapsedTime: (state, action: PayloadAction<number>) => {
       state.currentTrackElapsedTime = action.payload;
     },
+    changeIsMuted: (state, action: PayloadAction<boolean>) => {
+      state.isMuted = action.payload;
+    },
     changeIsPlaying: (state, action: PayloadAction<boolean>) => {
       state.isPlaying = action.payload;
+    },
+    changeVolume: (state, action: PayloadAction<number>) => {
+      state.volume = action.payload;
     },
     clearTracklist: (state) => {
       state.currentTrack = initialState.currentTrack;
@@ -73,7 +83,9 @@ export const {
   addTrack,
   changeCurrentTrack,
   changeCurrentTrackElapsedTime,
+  changeIsMuted,
   changeIsPlaying,
+  changeVolume,
   clearTracklist,
   loadPlaylist,
   removeIdFromQueue,

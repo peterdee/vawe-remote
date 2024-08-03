@@ -1,6 +1,6 @@
 export type Target = 'remote' | 'server';
 
-export interface SocketMessage<T> {
+export interface SocketMessage<T = null> {
   payload: T;
   target: Target;
 }

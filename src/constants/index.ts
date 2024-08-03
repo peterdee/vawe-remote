@@ -6,11 +6,16 @@ export const DEFAULT_SERVER_ADDRESS = 'http://localhost:5077';
 
 export const WS_EVENTS = {
   addTrack: 'ADD_TRACK',
-  onTimeUpdate: 'ON_TIME_UPDATE',
+  changeCurrentTrack: 'CHANGE_CURRENT_TRACK',
+  changeCurrentTrackElapsedTime: 'CHANGE_CURRENT_TRACK_ELAPSED_TIME',
+  changeIsMuted: 'CHANGE_IS_MUTED',
+  changeIsPlaying: 'CHANGE_IS_PLAYING',
+  changeVolume: 'CHANGE_VOLUME',
+  clearTracklist: 'CLEAR_TRACKLIST',
   loadPlaylist: 'LOAD_PLAYLIST',
+  removeIdFromQueue: 'REMOVE_ID_FROM_QUEUE',
   removeTrack: 'REMOVE_TRACK',
   requestCurrentTrack: 'REQUEST_CURRENT_TRACK',
   requestPlaybackState: 'REQUEST_PLAYBACK_STATE',
   requestPlaylist: 'REQUEST_PLAYLIST',
-  updatePlaybackState: 'UPDATE_PLAYBACK_STATE',
 };

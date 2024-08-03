@@ -46,7 +46,7 @@ const Main = React.memo((): React.JSX.Element => {
           storeConnection(newConnection);
           setIsLoading(false);
           log('connected as', newConnection.id);
-          return navigate(routes.player);
+          navigate(routes.player);
         });
       }
     },

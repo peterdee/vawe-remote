@@ -8,6 +8,14 @@ import { useDispatch } from 'react-redux';
 
 import {
   addTrack,
+  changeCurrentTrack,
+  changeCurrentTrackElapsedTime,
+  changeIsMuted,
+  changeIsPlaying,
+  changeVolume,
+  clearTracklist,
+  loadPlaylist,
+  removeIdFromQueue,
   removeTrack,
 } from '../store/features/tracklist';
 import type { AppDispatch } from '../store';
@@ -42,6 +50,54 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
           dispatch(addTrack(payload.payload));
         }
       };
+
+      const changeCurrentTrackHandler = (payload: types.SocketMessage<string>) => {
+        if (payload.target === CURRENT_TARGET_TYPE) {
+          dispatch(changeCurrentTrack(payload.payload));
+        }
+      };
+
+      const changeCurrentTrackElapsedTimeHandler = (payload: types.SocketMessage<number>) => {
+        if (payload.target === CURRENT_TARGET_TYPE) {
+          dispatch(changeCurrentTrackElapsedTime(payload.payload));
+        }
+      };
+
+      const changeIsMutedHandler = (payload: types.SocketMessage<boolean>) => {
+        if (payload.target === CURRENT_TARGET_TYPE) {
+          dispatch(changeIsMuted(payload.payload));
+        }
+      };
+
+      const changeIsPlayingHandler = (payload: types.SocketMessage<boolean>) => {
+        if (payload.target === CURRENT_TARGET_TYPE) {
+          dispatch(changeIsPlaying(payload.payload));
+        }
+      };
+
+      const changeVolumeHandler = (payload: types.SocketMessage<number>) => {
+        if (payload.target === CURRENT_TARGET_TYPE) {
+          dispatch(changeVolume(payload.payload));
+        }
+      };
+
+      const clearTracklistHandler = (payload: types.SocketMessage) => {
+        if (payload.target === CURRENT_TARGET_TYPE) {
+          dispatch(clearTracklist());
+        }
+      };
+
+      const loadPlaylistHandler = (payload: types.SocketMessage<types.Track[]>) => {
+        if (payload.target === CURRENT_TARGET_TYPE) {
+          dispatch(loadPlaylist(payload.payload));
+        }
+      };
+
+      const removeIdFromQueueHandler = (payload: types.SocketMessage<string>) => {
+        if (payload.target === CURRENT_TARGET_TYPE) {
+          dispatch(removeIdFromQueue(payload.payload));
+        }
+      };
     
       const removeTrackHandler = (payload: types.SocketMessage<string>) => {
         if (payload.target === CURRENT_TARGET_TYPE) {
@@ -52,6 +108,17 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
       if (connection && connection.connected) {
         log('register event listeners');
         connection.on(WS_EVENTS.addTrack, addTrackHandler);
+        connection.on(WS_EVENTS.changeCurrentTrack, changeCurrentTrackHandler);
+        connection.on(
+          WS_EVENTS.changeCurrentTrackElapsedTime,
+          changeCurrentTrackElapsedTimeHandler,
+        );
+        connection.on(WS_EVENTS.changeIsMuted, changeIsMutedHandler);
+        connection.on(WS_EVENTS.changeIsPlaying, changeIsPlayingHandler);
+        connection.on(WS_EVENTS.changeVolume, changeVolumeHandler);
+        connection.on(WS_EVENTS.clearTracklist, clearTracklistHandler);
+        connection.on(WS_EVENTS.loadPlaylist, loadPlaylistHandler);
+        connection.on(WS_EVENTS.removeIdFromQueue, removeIdFromQueueHandler);
         connection.on(WS_EVENTS.removeTrack, removeTrackHandler);
       }
 
@@ -59,6 +126,17 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
         if (connection && connection.connected) {
           log('remove event listeners');
           connection.off(WS_EVENTS.addTrack, addTrackHandler);
+          connection.off(WS_EVENTS.changeCurrentTrack, changeCurrentTrackHandler);
+          connection.off(
+            WS_EVENTS.changeCurrentTrackElapsedTime,
+            changeCurrentTrackElapsedTimeHandler,
+          );
+          connection.off(WS_EVENTS.changeIsMuted, changeIsMutedHandler);
+          connection.off(WS_EVENTS.changeIsPlaying, changeIsPlayingHandler);
+          connection.off(WS_EVENTS.changeVolume, changeVolumeHandler);
+          connection.off(WS_EVENTS.clearTracklist, clearTracklistHandler);
+          connection.off(WS_EVENTS.loadPlaylist, loadPlaylistHandler);
+          connection.off(WS_EVENTS.removeIdFromQueue, removeIdFromQueueHandler);
           connection.off(WS_EVENTS.removeTrack, removeTrackHandler);
         }
       }
