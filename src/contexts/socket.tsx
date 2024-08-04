@@ -120,6 +120,47 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
         connection.on(WS_EVENTS.loadPlaylist, loadPlaylistHandler);
         connection.on(WS_EVENTS.removeIdFromQueue, removeIdFromQueueHandler);
         connection.on(WS_EVENTS.removeTrack, removeTrackHandler);
+
+        connection.emit(
+          WS_EVENTS.requestCurrentTrack,
+          (error: Error, response: types.SocketMessage<string>) => {
+            if (error) {
+              // TODO: error handling
+              log('socket error', WS_EVENTS.requestCurrentTrack, error);
+            } else {
+              dispatch(changeCurrentTrack(response.payload));
+            }
+          },
+        );
+
+        connection.emit(
+          WS_EVENTS.requestPlaybackState,
+          (error: Error, response: types.SocketMessage<types.PlaybackStatePayload>) => {
+            if (error) {
+              // TODO: error handling
+              log('socket error', WS_EVENTS.requestPlaybackState, error);
+            } else {
+              dispatch(
+                changeCurrentTrackElapsedTime(response.payload.currentTrackElapsedTime),
+              );
+              dispatch(changeIsMuted(response.payload.isMuted));
+              dispatch(changeIsPlaying(response.payload.isPlaying));
+              dispatch(changeVolume(response.payload.volume));
+            }
+          },
+        );
+
+        connection.emit(
+          WS_EVENTS.requestTracklist,
+          (error: Error, response: types.SocketMessage<types.Track[]>) => {
+            if (error) {
+              // TODO: error handling
+              log('socket error', WS_EVENTS.requestTracklist, error);
+            } else {
+              dispatch(loadPlaylist(response.payload));
+            }
+          },
+        );
       }
 
       return () => {

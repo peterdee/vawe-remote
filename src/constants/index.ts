@@ -12,10 +12,11 @@ export const WS_EVENTS = {
   changeIsPlaying: 'CHANGE_IS_PLAYING',
   changeVolume: 'CHANGE_VOLUME',
   clearTracklist: 'CLEAR_TRACKLIST',
+  connectClient: 'connect',
   loadPlaylist: 'LOAD_PLAYLIST',
   removeIdFromQueue: 'REMOVE_ID_FROM_QUEUE',
   removeTrack: 'REMOVE_TRACK',
   requestCurrentTrack: 'REQUEST_CURRENT_TRACK',
   requestPlaybackState: 'REQUEST_PLAYBACK_STATE',
-  requestPlaylist: 'REQUEST_PLAYLIST',
+  requestTracklist: 'REQUEST_TRACKLIST',
 };

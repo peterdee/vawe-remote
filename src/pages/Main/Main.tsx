@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 
 import type { AppDispatch, RootState } from '../../store';
 import { changeServerAddress } from '../../store/features/settings';
-import { DEFAULT_SERVER_ADDRESS } from '../../constants';
+import { DEFAULT_SERVER_ADDRESS, WS_EVENTS } from '../../constants';
 import log from '../../utilities/logger';
 import { routes } from '../../router';
 import { SocketContext } from '../../contexts/socket';
@@ -36,18 +36,30 @@ const Main = React.memo((): React.JSX.Element => {
             autoConnect: true,
             reconnection: true,
             reconnectionAttempts: 10,
-            reconnectionDelay: 1,
-            reconnectionDelayMax: 10,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 10000,
             retries: 10,
           },
         );
 
-        newConnection.on('connect', () => {
-          storeConnection(newConnection);
-          setIsLoading(false);
-          log('connected as', newConnection.id);
-          navigate(routes.player);
-        });
+        newConnection.on(
+          WS_EVENTS.connectClient,
+          () => {
+            storeConnection(newConnection);
+            setIsLoading(false);
+            log('connected as', newConnection.id);
+            navigate(routes.player);
+          },
+        );
+
+        newConnection.io.on(
+          'error',
+          (error) => {
+            // TODO: do not reconnect if server is offline
+            setIsLoading(false);
+            log('could not connect to the server', error);
+          },
+        );
       }
     },
     [
