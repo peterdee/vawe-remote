@@ -6,6 +6,7 @@ import type { RootState } from '../../store';
 import { routes } from '../../router';
 import { SocketContext } from '../../contexts/socket';
 import type * as types from '../../types';
+import './styles.css';
 
 const Playlist = React.memo((): React.JSX.Element => {
   const { connection } = useContext(SocketContext);
@@ -48,7 +49,9 @@ const Playlist = React.memo((): React.JSX.Element => {
       ) }
       { tracklist.length > 0 && tracklist.map((track: types.Track): React.JSX.Element => (
         <div
-          className="f"
+          className={`f ${currentTrack && currentTrack.id === track.id
+            ? 'highlight'
+            : ''}`}
           key={track.id}
         >
           { track.name }
