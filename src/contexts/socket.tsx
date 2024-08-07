@@ -19,7 +19,7 @@ import {
   removeTrack,
 } from '../store/features/tracklist';
 import type { AppDispatch } from '../store';
-import { CURRENT_TARGET_TYPE, WS_EVENTS } from '../constants';
+import { CLIENT_TYPE, WS_EVENTS } from '../constants';
 import log from '../utilities/logger';
 import type * as types from '../types';
 
@@ -46,63 +46,68 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
   useEffect(
     () => {
       const addTrackHandler = (payload: types.SocketMessage<types.Track>) => {
-        if (payload.target === CURRENT_TARGET_TYPE) {
+        if (payload.target === CLIENT_TYPE) {
           dispatch(addTrack(payload.payload));
         }
       };
 
       const changeCurrentTrackHandler = (payload: types.SocketMessage<string>) => {
-        if (payload.target === CURRENT_TARGET_TYPE) {
+        if (payload.target === CLIENT_TYPE) {
           dispatch(changeCurrentTrack(payload.payload));
         }
       };
 
       const changeCurrentTrackElapsedTimeHandler = (payload: types.SocketMessage<number>) => {
-        if (payload.target === CURRENT_TARGET_TYPE) {
+        if (payload.target === CLIENT_TYPE) {
           dispatch(changeCurrentTrackElapsedTime(payload.payload));
         }
       };
 
       const changeIsMutedHandler = (payload: types.SocketMessage<boolean>) => {
-        if (payload.target === CURRENT_TARGET_TYPE) {
+        if (payload.target === CLIENT_TYPE) {
           dispatch(changeIsMuted(payload.payload));
         }
       };
 
       const changeIsPlayingHandler = (payload: types.SocketMessage<boolean>) => {
-        if (payload.target === CURRENT_TARGET_TYPE) {
+        if (payload.target === CLIENT_TYPE) {
           dispatch(changeIsPlaying(payload.payload));
         }
       };
 
       const changeVolumeHandler = (payload: types.SocketMessage<number>) => {
-        if (payload.target === CURRENT_TARGET_TYPE) {
+        if (payload.target === CLIENT_TYPE) {
           dispatch(changeVolume(payload.payload));
         }
       };
 
       const clearTracklistHandler = (payload: types.SocketMessage) => {
-        if (payload.target === CURRENT_TARGET_TYPE) {
+        if (payload.target === CLIENT_TYPE) {
           dispatch(clearTracklist());
         }
       };
 
       const loadPlaylistHandler = (payload: types.SocketMessage<types.Track[]>) => {
-        if (payload.target === CURRENT_TARGET_TYPE) {
+        if (payload.target === CLIENT_TYPE) {
           dispatch(loadPlaylist(payload.payload));
         }
       };
 
       const removeIdFromQueueHandler = (payload: types.SocketMessage<string>) => {
-        if (payload.target === CURRENT_TARGET_TYPE) {
+        if (payload.target === CLIENT_TYPE) {
           dispatch(removeIdFromQueue(payload.payload));
         }
       };
     
       const removeTrackHandler = (payload: types.SocketMessage<string>) => {
-        if (payload.target === CURRENT_TARGET_TYPE) {
+        if (payload.target === CLIENT_TYPE) {
           dispatch(removeTrack(payload.payload));
         }
+      };
+
+      const requestTracklistHandler = (message: types.SocketMessage<types.Track[]>) => {
+        console.log('received tracklist', message);
+        dispatch(loadPlaylist(message.payload));
       };
 
       if (connection && connection.connected) {
@@ -120,46 +125,45 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
         connection.on(WS_EVENTS.loadPlaylist, loadPlaylistHandler);
         connection.on(WS_EVENTS.removeIdFromQueue, removeIdFromQueueHandler);
         connection.on(WS_EVENTS.removeTrack, removeTrackHandler);
+        connection.on(WS_EVENTS.requestTracklist, requestTracklistHandler);
 
-        connection.emit(
-          WS_EVENTS.requestCurrentTrack,
-          (error: Error, response: types.SocketMessage<string>) => {
-            if (error) {
-              // TODO: error handling
-              log('socket error', WS_EVENTS.requestCurrentTrack, error);
-            } else {
-              dispatch(changeCurrentTrack(response.payload));
-            }
-          },
-        );
+        // connection.emit(
+        //   WS_EVENTS.requestCurrentTrack,
+        //   (error: Error, response: types.SocketMessage<string>) => {
+        //     if (error) {
+        //       // TODO: error handling
+        //       log('socket error', WS_EVENTS.requestCurrentTrack, error);
+        //     } else {
+        //       dispatch(changeCurrentTrack(response.payload));
+        //     }
+        //   },
+        // );
 
         connection.emit(
           WS_EVENTS.requestPlaybackState,
-          (error: Error, response: types.SocketMessage<types.PlaybackStatePayload>) => {
-            if (error) {
-              // TODO: error handling
-              log('socket error', WS_EVENTS.requestPlaybackState, error);
-            } else {
-              dispatch(
-                changeCurrentTrackElapsedTime(response.payload.currentTrackElapsedTime),
-              );
-              dispatch(changeIsMuted(response.payload.isMuted));
-              dispatch(changeIsPlaying(response.payload.isPlaying));
-              dispatch(changeVolume(response.payload.volume));
-            }
-          },
+          {
+            target: 'player',
+          } as types.SocketMessage,
+          // (error: Error, response: types.SocketMessage<types.PlaybackStatePayload>) => {
+          //   if (error) {
+          //     // TODO: error handling
+          //     log('socket error', WS_EVENTS.requestPlaybackState, error);
+          //   } else {
+          //     dispatch(
+          //       changeCurrentTrackElapsedTime(response.payload.currentTrackElapsedTime),
+          //     );
+          //     dispatch(changeIsMuted(response.payload.isMuted));
+          //     dispatch(changeIsPlaying(response.payload.isPlaying));
+          //     dispatch(changeVolume(response.payload.volume));
+          //   }
+          // },
         );
 
         connection.emit(
           WS_EVENTS.requestTracklist,
-          (error: Error, response: types.SocketMessage<types.Track[]>) => {
-            if (error) {
-              // TODO: error handling
-              log('socket error', WS_EVENTS.requestTracklist, error);
-            } else {
-              dispatch(loadPlaylist(response.payload));
-            }
-          },
+          {
+            target: 'player'
+          } as types.SocketMessage,
         );
       }
 
@@ -179,6 +183,7 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
           connection.off(WS_EVENTS.loadPlaylist, loadPlaylistHandler);
           connection.off(WS_EVENTS.removeIdFromQueue, removeIdFromQueueHandler);
           connection.off(WS_EVENTS.removeTrack, removeTrackHandler);
+          connection.off(WS_EVENTS.requestTracklist, requestTracklistHandler);
         }
       }
     },

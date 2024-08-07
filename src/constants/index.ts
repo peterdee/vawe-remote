@@ -1,6 +1,6 @@
 import type * as types from '../types';
 
-export const CURRENT_TARGET_TYPE: types.Target = 'remote';
+export const CLIENT_TYPE: types.Target = 'remote';
 
 export const DEFAULT_SERVER_ADDRESS = 'http://localhost:5077';
 

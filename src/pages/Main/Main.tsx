@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 
 import type { AppDispatch, RootState } from '../../store';
 import { changeServerAddress } from '../../store/features/settings';
-import { DEFAULT_SERVER_ADDRESS, WS_EVENTS } from '../../constants';
+import { CLIENT_TYPE, DEFAULT_SERVER_ADDRESS, WS_EVENTS } from '../../constants';
 import log from '../../utilities/logger';
 import { routes } from '../../router';
 import { SocketContext } from '../../contexts/socket';
@@ -34,6 +34,9 @@ const Main = React.memo((): React.JSX.Element => {
           serverAddress,
           {
             autoConnect: true,
+            query: {
+              clientType: CLIENT_TYPE,
+            },
             reconnection: true,
             reconnectionAttempts: 10,
             reconnectionDelay: 1000,

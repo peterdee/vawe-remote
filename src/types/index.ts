@@ -5,7 +5,7 @@ export interface PlaybackStatePayload {
   volume: number;
 }
 
-export type Target = 'remote' | 'server';
+export type Target = 'player' | 'remote' | 'server';
 
 export interface SocketMessage<T = null> {
   payload: T;
