@@ -1,4 +1,3 @@
-import React from 'react';
 import { PersistGate } from 'redux-persist/integration/react';
 import { Provider } from 'react-redux'
 import ReactDOM from 'react-dom/client';
@@ -11,15 +10,13 @@ import SocketProvider from './contexts/socket';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <div className="f d-col wrap">
-      <Provider store={store}>
-        <PersistGate persistor={persistor}>
-          <SocketProvider>
-            <RouterProvider router={router} />
-          </SocketProvider>
-        </PersistGate>
-      </Provider>
-    </div>
-  </React.StrictMode>,
+  <div className="f d-col wrap">
+    <Provider store={store}>
+      <PersistGate persistor={persistor}>
+        <SocketProvider>
+          <RouterProvider router={router} />
+        </SocketProvider>
+      </PersistGate>
+    </Provider>
+  </div>,
 );

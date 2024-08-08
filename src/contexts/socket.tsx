@@ -19,9 +19,9 @@ import {
   removeTrack,
 } from '../store/features/tracklist';
 import type { AppDispatch } from '../store';
-import { CLIENT_TYPE, WS_EVENTS } from '../constants';
 import log from '../utilities/logger';
 import type * as types from '../types';
+import { WS_EVENTS } from '../constants';
 
 interface SocketContextData {
   connection: Socket | null;
@@ -36,8 +36,12 @@ const defaultContextValue: SocketContextData = {
 export const SocketContext = createContext(defaultContextValue);
 
 const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
-  const dispatch = useDispatch<AppDispatch>();
   const [connection, setConnection] = useState<Socket | null>(null);
+  const [isRegistered, setIsRegistered] = useState<boolean>(false);
+
+  const dispatch = useDispatch<AppDispatch>();
+
+  console.log('socket provider');
 
   const storeConnection = (newConnection: Socket) => {
     setConnection(newConnection);
@@ -45,68 +49,80 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
 
   useEffect(
     () => {
-      const addTrackHandler = (payload: types.SocketMessage<types.Track>) => {
-        if (payload.target === CLIENT_TYPE) {
-          dispatch(addTrack(payload.payload));
-        }
+      if (isRegistered && connection) {
+        log('register events');
+        connection.emit(WS_EVENTS.requestCurrentTrack);
+        connection.emit(WS_EVENTS.requestPlaybackState);
+        connection.emit(WS_EVENTS.requestTracklist);
+      }
+    },
+    [
+      connection,
+      isRegistered,
+    ],
+  );
+
+  useEffect(
+    () => {
+      const addTrackHandler = (message: types.SocketMessage<types.Track>) => {
+        dispatch(addTrack(message.payload));
       };
 
-      const changeCurrentTrackHandler = (payload: types.SocketMessage<string>) => {
-        if (payload.target === CLIENT_TYPE) {
-          dispatch(changeCurrentTrack(payload.payload));
-        }
+      const changeCurrentTrackHandler = (message: types.SocketMessage<string>) => {
+        dispatch(changeCurrentTrack(message.payload));
       };
 
-      const changeCurrentTrackElapsedTimeHandler = (payload: types.SocketMessage<number>) => {
-        if (payload.target === CLIENT_TYPE) {
-          dispatch(changeCurrentTrackElapsedTime(payload.payload));
-        }
+      const changeCurrentTrackElapsedTimeHandler = (message: types.SocketMessage<number>) => {
+        dispatch(changeCurrentTrackElapsedTime(message.payload));
       };
 
-      const changeIsMutedHandler = (payload: types.SocketMessage<boolean>) => {
-        if (payload.target === CLIENT_TYPE) {
-          dispatch(changeIsMuted(payload.payload));
-        }
+      const changeIsMutedHandler = (message: types.SocketMessage<boolean>) => {
+        dispatch(changeIsMuted(message.payload));
       };
 
-      const changeIsPlayingHandler = (payload: types.SocketMessage<boolean>) => {
-        if (payload.target === CLIENT_TYPE) {
-          dispatch(changeIsPlaying(payload.payload));
-        }
+      const changeIsPlayingHandler = (message: types.SocketMessage<boolean>) => {
+        dispatch(changeIsPlaying(message.payload));
       };
 
-      const changeVolumeHandler = (payload: types.SocketMessage<number>) => {
-        if (payload.target === CLIENT_TYPE) {
-          dispatch(changeVolume(payload.payload));
-        }
+      const changeVolumeHandler = (message: types.SocketMessage<number>) => {
+        dispatch(changeVolume(message.payload));
       };
 
-      const clearTracklistHandler = (payload: types.SocketMessage) => {
-        if (payload.target === CLIENT_TYPE) {
-          dispatch(clearTracklist());
-        }
+      const clearTracklistHandler = () => {
+        dispatch(clearTracklist());
       };
 
-      const loadPlaylistHandler = (payload: types.SocketMessage<types.Track[]>) => {
-        if (payload.target === CLIENT_TYPE) {
-          dispatch(loadPlaylist(payload.payload));
-        }
+      const loadPlaylistHandler = (message: types.SocketMessage<types.Track[]>) => {
+        dispatch(loadPlaylist(message.payload));
       };
 
-      const removeIdFromQueueHandler = (payload: types.SocketMessage<string>) => {
-        if (payload.target === CLIENT_TYPE) {
-          dispatch(removeIdFromQueue(payload.payload));
-        }
+      const removeIdFromQueueHandler = (message: types.SocketMessage<string>) => {
+        dispatch(removeIdFromQueue(message.payload));
       };
     
-      const removeTrackHandler = (payload: types.SocketMessage<string>) => {
-        if (payload.target === CLIENT_TYPE) {
-          dispatch(removeTrack(payload.payload));
-        }
+      const removeTrackHandler = (message: types.SocketMessage<string>) => {
+        dispatch(removeTrack(message.payload));
+      };
+
+      const requestCurrentTrackHandler = (message: types.SocketMessage<string>) => {
+        log('received current track', message);
+        dispatch(changeCurrentTrack(message.payload));
+      };
+
+      const requestPlaybackStateHandler = (
+        message: types.SocketMessage<types.PlaybackStatePayload>,
+      ) => {
+        log('received playback state', message);
+        dispatch(
+          changeCurrentTrackElapsedTime(message.payload.currentTrackElapsedTime),
+        );
+        dispatch(changeIsMuted(message.payload.isMuted));
+        dispatch(changeIsPlaying(message.payload.isPlaying));
+        dispatch(changeVolume(message.payload.volume));
       };
 
       const requestTracklistHandler = (message: types.SocketMessage<types.Track[]>) => {
-        console.log('received tracklist', message);
+        log('received tracklist', message);
         dispatch(loadPlaylist(message.payload));
       };
 
@@ -125,46 +141,11 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
         connection.on(WS_EVENTS.loadPlaylist, loadPlaylistHandler);
         connection.on(WS_EVENTS.removeIdFromQueue, removeIdFromQueueHandler);
         connection.on(WS_EVENTS.removeTrack, removeTrackHandler);
+        connection.on(WS_EVENTS.requestCurrentTrack, requestCurrentTrackHandler);
+        connection.on(WS_EVENTS.requestPlaybackState, requestPlaybackStateHandler);
         connection.on(WS_EVENTS.requestTracklist, requestTracklistHandler);
 
-        // connection.emit(
-        //   WS_EVENTS.requestCurrentTrack,
-        //   (error: Error, response: types.SocketMessage<string>) => {
-        //     if (error) {
-        //       // TODO: error handling
-        //       log('socket error', WS_EVENTS.requestCurrentTrack, error);
-        //     } else {
-        //       dispatch(changeCurrentTrack(response.payload));
-        //     }
-        //   },
-        // );
-
-        connection.emit(
-          WS_EVENTS.requestPlaybackState,
-          {
-            target: 'player',
-          } as types.SocketMessage,
-          // (error: Error, response: types.SocketMessage<types.PlaybackStatePayload>) => {
-          //   if (error) {
-          //     // TODO: error handling
-          //     log('socket error', WS_EVENTS.requestPlaybackState, error);
-          //   } else {
-          //     dispatch(
-          //       changeCurrentTrackElapsedTime(response.payload.currentTrackElapsedTime),
-          //     );
-          //     dispatch(changeIsMuted(response.payload.isMuted));
-          //     dispatch(changeIsPlaying(response.payload.isPlaying));
-          //     dispatch(changeVolume(response.payload.volume));
-          //   }
-          // },
-        );
-
-        connection.emit(
-          WS_EVENTS.requestTracklist,
-          {
-            target: 'player'
-          } as types.SocketMessage,
-        );
+        setIsRegistered(true);
       }
 
       return () => {
@@ -183,6 +164,8 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
           connection.off(WS_EVENTS.loadPlaylist, loadPlaylistHandler);
           connection.off(WS_EVENTS.removeIdFromQueue, removeIdFromQueueHandler);
           connection.off(WS_EVENTS.removeTrack, removeTrackHandler);
+          connection.off(WS_EVENTS.requestCurrentTrack, requestCurrentTrackHandler);
+          connection.off(WS_EVENTS.requestPlaybackState, requestPlaybackStateHandler);
           connection.off(WS_EVENTS.requestTracklist, requestTracklistHandler);
         }
       }
