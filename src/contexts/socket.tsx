@@ -37,30 +37,14 @@ export const SocketContext = createContext(defaultContextValue);
 
 const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
   const [connection, setConnection] = useState<Socket | null>(null);
-  const [isRegistered, setIsRegistered] = useState<boolean>(false);
 
   const dispatch = useDispatch<AppDispatch>();
 
-  console.log('socket provider');
+  log('call SocketProvider');
 
   const storeConnection = (newConnection: Socket) => {
     setConnection(newConnection);
   };
-
-  useEffect(
-    () => {
-      if (isRegistered && connection) {
-        log('register events');
-        connection.emit(WS_EVENTS.requestCurrentTrack);
-        connection.emit(WS_EVENTS.requestPlaybackState);
-        connection.emit(WS_EVENTS.requestTracklist);
-      }
-    },
-    [
-      connection,
-      isRegistered,
-    ],
-  );
 
   useEffect(
     () => {
@@ -145,7 +129,13 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
         connection.on(WS_EVENTS.requestPlaybackState, requestPlaybackStateHandler);
         connection.on(WS_EVENTS.requestTracklist, requestTracklistHandler);
 
-        setIsRegistered(true);
+        const message: types.SocketMessage = {
+          payload: null,
+          target: 'player',
+        };
+        connection.emit(WS_EVENTS.requestTracklist, message);
+        // connection.emit(WS_EVENTS.requestCurrentTrack, message);
+        connection.emit(WS_EVENTS.requestPlaybackState, message);
       }
 
       return () => {
