@@ -129,13 +129,22 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
         connection.on(WS_EVENTS.requestPlaybackState, requestPlaybackStateHandler);
         connection.on(WS_EVENTS.requestTracklist, requestTracklistHandler);
 
-        const message: types.SocketMessage = {
-          payload: null,
-          target: 'player',
-        };
-        connection.emit(WS_EVENTS.requestTracklist, message);
-        // connection.emit(WS_EVENTS.requestCurrentTrack, message);
-        connection.emit(WS_EVENTS.requestPlaybackState, message);
+        (async () => {
+          const message: types.SocketMessage = {
+            payload: null,
+            target: 'player',
+          };
+          try {
+            const requestTracklistResponse = await connection
+              .timeout(5000)
+              .emitWithAck(WS_EVENTS.requestTracklist, message);
+            log(requestTracklistResponse);
+            // connection.emit(WS_EVENTS.requestCurrentTrack, message);
+            connection.emit(WS_EVENTS.requestPlaybackState, message);
+          } catch (error) {
+            log('ack error', error);
+          }
+        })();
       }
 
       return () => {
