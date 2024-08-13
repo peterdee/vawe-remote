@@ -4,6 +4,8 @@ export const CLIENT_TYPE: types.Target = 'remote';
 
 export const DEFAULT_SERVER_ADDRESS = 'http://localhost:5077';
 
+export const DEFAULT_TIMEOUT = 5000;
+
 export const WS_EVENTS = {
   addTrack: 'ADD_TRACK',
   changeCurrentTrack: 'CHANGE_CURRENT_TRACK',

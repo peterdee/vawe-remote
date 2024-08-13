@@ -19,9 +19,9 @@ import {
   removeTrack,
 } from '../store/features/tracklist';
 import type { AppDispatch } from '../store';
+import { DEFAULT_TIMEOUT, WS_EVENTS } from '../constants';
 import log from '../utilities/logger';
 import type * as types from '../types';
-import { WS_EVENTS } from '../constants';
 
 interface SocketContextData {
   connection: Socket | null;
@@ -56,8 +56,9 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
         dispatch(changeCurrentTrack(message.payload));
       };
 
-      const changeCurrentTrackElapsedTimeHandler = (message: types.SocketMessage<number>) => {
-        dispatch(changeCurrentTrackElapsedTime(message.payload));
+      const changeCurrentTrackElapsedTimeHandler = (value: number) => {
+        log('elapsed', value);
+        dispatch(changeCurrentTrackElapsedTime(value));
       };
 
       const changeIsMutedHandler = (message: types.SocketMessage<boolean>) => {
@@ -88,28 +89,6 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
         dispatch(removeTrack(message.payload));
       };
 
-      const requestCurrentTrackHandler = (message: types.SocketMessage<string>) => {
-        log('received current track', message);
-        dispatch(changeCurrentTrack(message.payload));
-      };
-
-      const requestPlaybackStateHandler = (
-        message: types.SocketMessage<types.PlaybackStatePayload>,
-      ) => {
-        log('received playback state', message);
-        dispatch(
-          changeCurrentTrackElapsedTime(message.payload.currentTrackElapsedTime),
-        );
-        dispatch(changeIsMuted(message.payload.isMuted));
-        dispatch(changeIsPlaying(message.payload.isPlaying));
-        dispatch(changeVolume(message.payload.volume));
-      };
-
-      const requestTracklistHandler = (message: types.SocketMessage<types.Track[]>) => {
-        log('received tracklist', message);
-        dispatch(loadPlaylist(message.payload));
-      };
-
       if (connection && connection.connected) {
         log('register event listeners');
         connection.on(WS_EVENTS.addTrack, addTrackHandler);
@@ -125,23 +104,43 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
         connection.on(WS_EVENTS.loadPlaylist, loadPlaylistHandler);
         connection.on(WS_EVENTS.removeIdFromQueue, removeIdFromQueueHandler);
         connection.on(WS_EVENTS.removeTrack, removeTrackHandler);
-        connection.on(WS_EVENTS.requestCurrentTrack, requestCurrentTrackHandler);
-        connection.on(WS_EVENTS.requestPlaybackState, requestPlaybackStateHandler);
-        connection.on(WS_EVENTS.requestTracklist, requestTracklistHandler);
 
         (async () => {
-          const message: types.SocketMessage = {
-            payload: null,
-            target: 'player',
-          };
           try {
-            const requestTracklistResponse = await connection
-              .timeout(5000)
-              .emitWithAck(WS_EVENTS.requestTracklist, message);
-            log(requestTracklistResponse);
-            // connection.emit(WS_EVENTS.requestCurrentTrack, message);
-            connection.emit(WS_EVENTS.requestPlaybackState, message);
+            const [currentTrackIdResponse]: [
+              types.SocketResponse<string>,
+            ] = await connection
+              .timeout(DEFAULT_TIMEOUT)
+              .emitWithAck(WS_EVENTS.requestCurrentTrack);
+            const [playbackStateResponse]: [
+              types.SocketResponse<types.PlaybackStatePayload>,
+            ] = await connection
+              .timeout(DEFAULT_TIMEOUT)
+              .emitWithAck(WS_EVENTS.requestPlaybackState);
+            const [tracklistResponse]: [
+              types.SocketResponse<types.Track[]>,
+            ] = await connection
+              .timeout(DEFAULT_TIMEOUT)
+              .emitWithAck(WS_EVENTS.requestTracklist);
+            log(
+              'received data',
+              tracklistResponse,
+              playbackStateResponse,
+              currentTrackIdResponse,
+            );
+            if (currentTrackIdResponse.payload) {
+              dispatch(changeCurrentTrack(currentTrackIdResponse.payload));
+            }
+            if (playbackStateResponse.payload) {
+              dispatch(changeIsMuted(playbackStateResponse.payload.isMuted));
+              dispatch(changeIsPlaying(playbackStateResponse.payload.isPlaying));
+              dispatch(changeVolume(playbackStateResponse.payload.volume));
+            }
+            if (tracklistResponse.payload) {
+              dispatch(loadPlaylist(tracklistResponse.payload));
+            }
           } catch (error) {
+            // TODO: error handling
             log('ack error', error);
           }
         })();
@@ -163,9 +162,6 @@ const SocketProvider = (props: React.PropsWithChildren): React.JSX.Element => {
           connection.off(WS_EVENTS.loadPlaylist, loadPlaylistHandler);
           connection.off(WS_EVENTS.removeIdFromQueue, removeIdFromQueueHandler);
           connection.off(WS_EVENTS.removeTrack, removeTrackHandler);
-          connection.off(WS_EVENTS.requestCurrentTrack, requestCurrentTrackHandler);
-          connection.off(WS_EVENTS.requestPlaybackState, requestPlaybackStateHandler);
-          connection.off(WS_EVENTS.requestTracklist, requestTracklistHandler);
         }
       }
     },
